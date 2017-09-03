@@ -1,0 +1,25 @@
+cherry-ci - CI Tools
+
+ABOUT:
+        The cherry-ci repository contains tools to enhance public open-source
+        CI infrastructures like Travis, CircleCI, Semaphore, and others. In
+        particular, it contains scripts to fetch custom OS-images, start and
+        emulate virtual machines on alien architectures, or run full
+        integration suites.
+
+DETAILS:
+        https://github.com/cherry-pick/cherry-ci/wiki
+
+BUG REPORTS:
+        https://github.com/cherry-pick/cherry-ci/issues
+
+GIT:
+        git@github.com:cherry-pick/cherry-ci.git
+        https://github.com/cherry-pick/cherry-ci.git
+
+GITWEB:
+        https://github.com/cherry-pick/cherry-ci
+
+LICENSE:
+        Apache Software License 2.0
+        See COPYING for details.
