@@ -11,24 +11,11 @@ echo "Running CI test..."
 CID_HAVEGED=`docker run --rm --privileged -d harbur/haveged`
 
 #
-# bootstrap archlinux-base package
-#
-# This first fetches the current archlinux-base and prepares a docker image to
-# run the bootstrap process in. Then we run the bootstrap process in the
-# container, fetch the tarball, and stop the container.
-docker build -t archlinux-base images/archlinux-base/
-CID=`docker run --privileged --rm -dit archlinux-base /bin/bash`
-docker exec -t --privileged "$CID" make -C /usr/src/build/ build
-docker exec -t --privileged "$CID" make -C /usr/src/build/ rootfs.tar
-docker cp "$CID":/usr/src/build/rootfs.tar .
-docker stop "$CID"
-
-#
 # test the newly created package
 #
-# Import the newly created image and use that image to recreate itself,
-# checking that the image works.
-docker import rootfs.tar cherrypick/archlinux-base
+# The new image was imported by the previous build into our docker
+# layer cache. Hence, simply re-run the entire build to verify that
+# the new image can bootstrap itself.
 docker build -t archlinux-base-test images/archlinux-base/
 CID=`docker run --privileged --rm -dit archlinux-base-test /bin/bash`
 docker exec -t --privileged "$CID" make -C /usr/src/build/ build

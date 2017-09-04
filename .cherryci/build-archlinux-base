@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+#
+# print introduction line as separator in the logs
+echo "Running CI build..."
+
+#
+# run entropy daemon so gpg can create keys
+CID_HAVEGED=`docker run --rm --privileged -d harbur/haveged`
+
+#
+# bootstrap archlinux-base package
+#
+# This first fetches the current archlinux-base and prepares a docker image to
+# run the bootstrap process in. Then we run the bootstrap process in the
+# container, fetch the tarball, and stop the container. Lastly, we import the
+# tarball into docker to be used by the following tests or deployments.
+docker build -t archlinux-base images/archlinux-base/
+CID=`docker run --privileged --rm -dit archlinux-base /bin/bash`
+docker exec -t --privileged "$CID" make -C /usr/src/build/ build
+docker exec -t --privileged "$CID" make -C /usr/src/build/ rootfs.tar
+docker cp "$CID":/usr/src/build/rootfs.tar .
+docker stop "$CID"
+docker import rootfs.tar cherrypick/archlinux-base
+
+#
+# stop entropy daemon
+docker stop "$CID_HAVEGED"
+
+#
+# print final line as separator in the logs
+echo "CI build finished"
