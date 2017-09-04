@@ -85,6 +85,7 @@ _build-it:
 	mkdir -m 1777 -p "$(C1_ROOTDIR)"/tmp
 	#
 	# create sub-level directories
+	mkdir -m 0777 -p "$(C1_ROOTDIR)"/run/shm
 	mkdir -m 0755 -p "$(C1_ROOTDIR)"/var/{cache/pacman/pkg,lib/pacman,log}
 	#
 	# setup mounts
