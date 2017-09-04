@@ -3,7 +3,14 @@
 #
 # This Makefile provides targets to bootstrap an ArchLinux installation
 # consisting of just pacman and its dependencies. The result will be an image
-# ready to be populated with native packages.
+# ready to be populated with native packages. Note that we need to manually
+# list some additional dependencies for pacman, since it does not natively have
+# them in its PKGCONFIG. This includes packages from the `base`-group, which
+# ArchLinux installs by default. We avoid this, though, since it contains a lot
+# of tools not needed for containers. Add it yourself, if required.
+# In most cases, these additional packages are tools used in pacman
+# post-install scripts. Hence, we must make sure they're available, so these
+# scripts will work properly.
 #
 # The intention is to create a clean, vanilla ArchLinux image without any
 # modifications, usable as base image for others.
@@ -105,9 +112,22 @@ _build-it:
 		--noconfirm \
 		--needed \
 		-Sy \
-			filesystem \
 			bash \
-			pacman
+			coreutils \
+			file \
+			filesystem \
+			findutils \
+			gawk \
+			grep \
+			gzip \
+			pacman \
+			procps-ng \
+			psmisc \
+			sed \
+			shadow \
+			tar \
+			util-linux \
+			which
 	#
 	# post-install fixes and default configuration
 	cp "mirrorlist" "$(C1_ROOTDIR)"/etc/pacman.d/
