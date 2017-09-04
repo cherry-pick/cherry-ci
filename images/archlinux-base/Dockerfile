@@ -34,3 +34,11 @@ RUN pacman -Sy \
                 git
 
 ADD . /usr/src/build
+
+#
+# populate possible /dev/shm symlink
+#
+# The devtmpfs filesystem is a singleton, and as such always shared with the
+# host. In case this is Debian, we must be prepared to mount over it. Make sure
+# the directory exists.
+RUN mkdir -m 0777 -p /run/shm

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+#
+# print introduction line as separator in the logs
+echo "Running CI setup..."
+
+#
+# pull all our dependencies
+docker pull harbur/haveged
+docker pull cherrypick/archlinux-base
+
+#
+# print final line as separator in the logs
+echo "CI setup finished"
