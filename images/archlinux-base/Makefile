@@ -103,6 +103,7 @@ _build-it:
 		--config pacman.conf \
 		--root "$(C1_ROOTDIR)" \
 		--noconfirm \
+		--needed \
 		-Sy \
 			filesystem \
 			bash \

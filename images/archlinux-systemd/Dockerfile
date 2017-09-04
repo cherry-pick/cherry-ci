@@ -8,10 +8,12 @@ FROM cherrypick/archlinux-base
 # for container boots via nspawn, docker, rocket, and friends.
 #
 
-RUN pacman -Sy --noconfirm \
-        sed \
-        gzip \
-        systemd
+RUN pacman -Sy \
+        --noconfirm \
+        --needed \
+                sed \
+                gzip \
+                systemd
 
 RUN echo -n >/etc/machine-id
 RUN ln -s ../../../etc/machine-id /var/lib/dbus/machine-id
