@@ -19,4 +19,5 @@ RUN pacman -Sy \
                 glib2 \
                 libsystemd \
                 meson \
-                ninja
+                ninja \
+                valgrind
