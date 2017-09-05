@@ -1,0 +1,157 @@
+#!/bin/bash
+
+#
+# cherry-ci - cherryci
+#
+# This script invokes a bunch of repository-configured commands to run in a CI
+# system. It currently reads the ./.cherryci/ directory of the repository it is
+# invoked in and runs the build and test scripts placed there. Additionally, it
+# supports an environment matrix to run the scripts with.
+#
+
+set -e
+shopt -s extglob
+
+#
+# configuration
+CHERRY_DIR=.cherryci
+CHERRY_MATRIX=()
+CHERRY_USEMATRIX=0
+
+#
+# stderr/stdout helpers
+out() { printf "$1 $2\n" "${@:3}"; }
+error() { out "==> ERROR:" "$@"; } >&2
+msg() { out "==>" "$@"; }
+msg2() { out "  ->" "$@";}
+die() { error "$@"; exit 1; }
+
+#
+# print usage
+usage() {
+        cat <<EOF
+${0##*/} [OPTIONS...] {COMMAND} [TARGET]
+
+Cherry-CI is a tool to run your setup, build, and test suites in a CI.
+
+Options:
+  -h, --help                    Print this help message
+  -m,                           Run full matrix
+
+Commands:
+  build                         Run build commands
+  test                          Run test commands
+EOF
+}
+
+#
+# execute matrix
+cherry_matrix() {
+        local key
+
+        for key in "${!CHERRY_MATRIX[@]}" ; do
+                (
+                        echo "-- BEGIN $1 ON: $2 -----------------------"
+                        echo
+
+                        eval "${CHERRY_MATRIX[$key]}"
+                        if [[ -f "$CHERRY_DIR/build-$2" ]] ; then
+                                "$CHERRY_DIR/build-$2" "${@:3}"
+                        fi
+                        if [[ "$1" = "test" ]] ; then
+                                "$CHERRY_DIR/test-$2" "${@:3}"
+                        fi
+
+                        echo
+                        echo "-- END $1 ON: $2 -------------------------"
+                )
+        done
+}
+
+#
+# dispatch targets
+cherry_dispatch() {
+        local file
+
+        if [[ -z $2 ]] ; then
+                for file in "$CHERRY_DIR"/test-* ; do
+                        if [[ ! -e "$file" ]] ; then
+                                continue
+                        fi
+
+                        cherry_matrix "$1" "${file#$CHERRY_DIR/test-}"
+                done
+        else
+                cherry_matrix "$1" "$2"
+        fi
+}
+
+#
+# deal with empty arguments or singular -h/--help early
+if [[ -z $1 || $1 = @(-h|--help) ]]; then
+        usage
+        exit $(( $# ? 0 : 1 ))
+fi
+
+#
+# parse options
+while getopts ':m' flag ; do
+        case $flag in
+        m)
+                CHERRY_USEMATRIX=1
+                ;;
+        :)
+                die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "$OPTARG"
+                ;;
+        ?)
+                die '%s: invalid option -- '\''%s'\' "${0##*/}" "$OPTARG"
+                ;;
+        esac
+done
+shift $(( OPTIND - 1 ))
+
+#
+# import matrix
+if [[ -f "$CHERRY_DIR/matrix" ]] ; then
+        source "$CHERRY_DIR/matrix"
+fi
+if [[ ${#CHERRY_MATRIX[@]} = 0 ]] ; then
+        CHERRY_MATRIX+=("")
+fi
+if (( ! CHERRY_USEMATRIX )) ; then
+        CHERRY_MATRIX=("${CHERRY_MATRIX[0]}")
+fi
+
+#
+# fetch command
+(( $# )) ||  die '%s: no command specified' "${0##*/}"
+CHERRY_COMMAND=$1; shift
+
+#
+# parse target
+if (( $# )) ; then
+        CHERRY_TARGET=$1; shift
+        if [[ ! -f "$CHERRY_DIR/test-$CHERRY_TARGET" ]] ; then
+                die '%s: invalid target -- '\''%s'\' "${0##*/}" "$CHERRY_TARGET"
+        fi
+fi
+
+#
+# parse remaining arguments
+if (( $# )) ; then
+        die '%s: invalid arguments -- '\''%s'\' "${0##*/}" "$1"
+fi
+
+#
+# dispatch command
+case "$CHERRY_COMMAND" in
+build)
+        cherry_dispatch "build" "$CHERRY_TARGET"
+        ;;
+test)
+        cherry_dispatch "test" "$CHERRY_TARGET"
+        ;;
+*)
+        die '%s: invalid command -- '\''%s'\' "${0##*/}" "$CHERRY_COMMAND"
+        ;;
+esac
