@@ -1,4 +1,4 @@
-FROM cherry-ci/fedora-ci-base
+FROM cherrypick/fedora-ci-base
 
 #
 # cherry-ci - fedora-ci-via-i686
