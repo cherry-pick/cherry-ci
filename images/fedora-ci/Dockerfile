@@ -34,6 +34,7 @@ RUN dnf -y --nodocs update \
                 ninja-build \
                 patch \
                 pkgconf \
+                python2-docutils \
                 sed \
                 sudo \
                 systemd-devel \
