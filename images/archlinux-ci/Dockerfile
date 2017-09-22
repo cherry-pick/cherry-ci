@@ -20,4 +20,5 @@ RUN pacman -Sy \
                 libsystemd \
                 meson \
                 ninja \
+                python-docutils \
                 valgrind
