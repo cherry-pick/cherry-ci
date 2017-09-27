@@ -14,5 +14,9 @@ docker pull cherrypick/archlinux-base
 docker pull cherrypick/fedora-base
 
 #
+# Run haveged detached to get entropy
+docker run --rm --privileged -d harbur/haveged
+
+#
 # Print final log-separator
 echo "CI setup finished"

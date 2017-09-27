@@ -3,17 +3,9 @@
 set -e
 
 #
-# Run entropy daemon
-CID_HAVEGED=`docker run --rm --privileged -d harbur/haveged`
-
-#
 # Test fedora-base
 #
 # The build-script already built 'cherrypick/fedora-base' for us, and it is
 # tagged in the local docker cache. We now use this image to rebuilt itself,
 # making sure it can host itself.
 docker build images/fedora-base/
-
-#
-# Stop entropy daemon
-docker stop "$CID_HAVEGED"
