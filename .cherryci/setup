@@ -8,6 +8,7 @@ echo "Running CI setup..."
 
 #
 # Pull all our dependencies
+install-package qemu-user-static
 docker pull harbur/haveged
 docker pull cherrypick/archlinux-base
 docker pull cherrypick/fedora-base
