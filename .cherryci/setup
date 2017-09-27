@@ -10,6 +10,7 @@ echo "Running CI setup..."
 # Pull all our dependencies
 docker pull harbur/haveged
 docker pull cherrypick/archlinux-base
+docker pull cherrypick/fedora-base
 
 #
 # Print final log-separator

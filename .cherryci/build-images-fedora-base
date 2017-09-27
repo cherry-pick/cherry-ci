@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+#
+# Run entropy daemon
+CID_HAVEGED=`docker run --rm --privileged -d harbur/haveged`
+
+#
+# Bootstrap fedora-base
+docker build -t fedora-base images/fedora-base/
+docker run --rm --entrypoint cat fedora-base /usr/src/build/sysroot.tar | \
+        docker import - cherrypick/fedora-base
+
+#
+# Stop entropy daemon
+docker stop "$CID_HAVEGED"
