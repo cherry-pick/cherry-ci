@@ -3,15 +3,11 @@
 set -e
 
 #
-# print introduction line as separator in the logs
-echo "Running CI test..."
-
-#
-# run entropy daemon so gpg can create keys
+# Run entropy daemon
 CID_HAVEGED=`docker run --rm --privileged -d harbur/haveged`
 
 #
-# test the newly created package
+# Test archlinux-base
 #
 # The new image was imported by the previous build into our docker
 # layer cache. Hence, simply re-run the entire build to verify that
@@ -22,9 +18,5 @@ docker exec -t --privileged "$CID" make -C /usr/src/build/ build
 docker stop "$CID"
 
 #
-# stop entropy daemon
+# Stop entropy daemon
 docker stop "$CID_HAVEGED"
-
-#
-# print final line as separator in the logs
-echo "CI test finished"

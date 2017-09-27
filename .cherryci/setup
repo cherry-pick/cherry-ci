@@ -3,14 +3,14 @@
 set -e
 
 #
-# print introduction line as separator in the logs
+# Print early log-separator
 echo "Running CI setup..."
 
 #
-# pull all our dependencies
+# Pull all our dependencies
 docker pull harbur/haveged
 docker pull cherrypick/archlinux-base
 
 #
-# print final line as separator in the logs
+# Print final log-separator
 echo "CI setup finished"
