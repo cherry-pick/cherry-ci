@@ -65,6 +65,12 @@ RUN pacman \
                 util-linux \
                 which
 
+RUN echo \
+        'Server = http://mirror.rackspace.com/archlinux/$repo/os/$arch' \
+        >/usr/src/build/sysroot/etc/pacman.d/mirrorlist
+RUN echo \
+        'Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch' \
+        >>/usr/src/build/sysroot/etc/pacman.d/mirrorlist
 RUN pacman-key \
         --config /usr/src/build/sysroot/etc/pacman.conf \
         --gpgdir /usr/src/build/sysroot/etc/pacman.d/gnupg \
