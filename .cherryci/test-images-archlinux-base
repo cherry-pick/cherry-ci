@@ -12,10 +12,7 @@ CID_HAVEGED=`docker run --rm --privileged -d harbur/haveged`
 # The new image was imported by the previous build into our docker
 # layer cache. Hence, simply re-run the entire build to verify that
 # the new image can bootstrap itself.
-docker build -t archlinux-base-test images/archlinux-base/
-CID=`docker run --privileged --rm -dit archlinux-base-test /bin/bash`
-docker exec -t --privileged "$CID" make -C /usr/src/build/ build
-docker stop "$CID"
+docker build images/archlinux-base/
 
 #
 # Stop entropy daemon
