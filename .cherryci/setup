@@ -8,7 +8,8 @@ echo "Running CI setup..."
 
 #
 # Pull all our dependencies
-install-package qemu-user-static
+sudo apt-get update
+sudo apt-get install -y qemu-user-static
 docker pull harbur/haveged
 
 #
