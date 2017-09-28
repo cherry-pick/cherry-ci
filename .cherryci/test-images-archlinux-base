@@ -9,3 +9,8 @@ set -e
 # layer cache. Hence, simply re-run the entire build to verify that
 # the new image can bootstrap itself.
 docker build images/archlinux-base/
+
+#
+# Prune build artifacts
+docker image rm cherrypick/archlinux-base
+docker image prune -f

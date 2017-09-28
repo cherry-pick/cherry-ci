@@ -6,6 +6,11 @@ set -e
 # Test fedora-base
 #
 # The build-script already built 'cherrypick/fedora-base' for us, and it is
-# tagged in the local docker cache. We now use this image to rebuilt itself,
+# tagged in the local docker cache. We now use this image to rebuild itself,
 # making sure it can host itself.
 docker build images/fedora-base/
+
+#
+# Prune build artifacts
+docker image rm cherrypick/fedora-base
+docker image prune -f
