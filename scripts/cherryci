@@ -1,20 +1,19 @@
 #!/bin/bash
 
 #
-# cherry-ci - cherryci
+# cherry-ci - CI Runner
 #
-# This script invokes a bunch of repository-configured commands to run in a CI
-# system. It currently reads the ./.cherryci/ directory of the repository it is
-# invoked in and runs the build and test scripts placed there. Additionally, it
-# supports an environment matrix to run the scripts with.
+# This is the CI runner invoked in a prepared OS environment. It executes all
+# scripts in a specific subdirectory sequentially.
 #
 
 set -e
-shopt -s extglob
 
 #
-# configuration
-CHERRY_DIR=.cherryci
+# Configuration
+CHERRY_ACTION="test"
+CHERRY_DIR=".cherryci"
+CHERRY_FILE=
 CHERRY_MATRIX=()
 CHERRY_USEMATRIX=0
 
@@ -32,40 +31,69 @@ usage() {
         cat <<EOF
 ${0##*/} [OPTIONS...] {COMMAND} [TARGET]
 
-Cherry-CI is a tool to run your setup, build, and test suites in a CI.
+Cherry-CI runner to babysit CI suites.
 
 Options:
-  -h, --help                    Print this help message
-  -m,                           Run full matrix
-
-Commands:
-  build                         Run build commands
-  test                          Run test commands
+  -a ACTION                     Action to pass to scripts
+  -d DIR                        Directory to search for scripts
+  -f FILE                       Single file to execute, rather than all
+  -h                            Print this help message
+  -m                            Run full matrix
 EOF
 }
 
 #
-# execute matrix
-cherry_matrix() {
-        local key
+# run custom setup
+cherry_setup() {
+        if [[ -f "${CHERRY_DIR}/setup" ]] ; then
+                "${CHERRY_DIR}/setup"
+        fi
+}
 
+#
+# import matrix
+cherry_import_matrix() {
+        if [[ -f "${CHERRY_DIR}/matrix" ]] ; then
+                source "${CHERRY_DIR}/matrix"
+        fi
+        if [[ ${#CHERRY_MATRIX[@]} = 0 ]] ; then
+                # if none specified, add empty entry
+                CHERRY_MATRIX+=("")
+        fi
+        if (( ! CHERRY_USEMATRIX )) ; then
+                # fold matrix to just first entry, if not requested otherwise
+                CHERRY_MATRIX=("${CHERRY_MATRIX[0]}")
+        fi
+}
+
+#
+# execute matrix
+cherry_run_matrix() {
+        local env
+        local key
+        local i
+
+        echo "++ BEGIN ON: $1 +++++++++++++++++++++++"
+        echo
+
+        i=0
         for key in "${!CHERRY_MATRIX[@]}" ; do
                 (
-                        echo "-- BEGIN $1 ON: $2 -----------------------"
+                        echo "-- BEGIN RUN: $i -----------------------"
                         echo
 
                         eval "${CHERRY_MATRIX[$key]}"
-                        if [[ -f "$CHERRY_DIR/build-$2" ]] ; then
-                                "$CHERRY_DIR/build-$2" "${@:3}"
-                        fi
-                        if [[ "$1" = "test" ]] ; then
-                                "$CHERRY_DIR/test-$2" "${@:3}"
-                        fi
+                        "${@:1}"
 
                         echo
-                        echo "-- END $1 ON: $2 -------------------------"
+                        echo "-- END RUN: $i -------------------------"
                 )
+
+                i=$((i+1))
         done
+
+        echo
+        echo "++ END ON: $1 +++++++++++++++++++++++++"
 }
 
 #
@@ -73,68 +101,53 @@ cherry_matrix() {
 cherry_dispatch() {
         local file
 
-        if [[ -z $2 ]] ; then
-                for file in "$CHERRY_DIR"/test-* ; do
-                        if [[ ! -e "$file" ]] ; then
+        if [[ -z $1 ]] ; then
+                for file in "${CHERRY_DIR}"/ci-* ; do
+                        if [[ ! -x "$file" ]] ; then
                                 continue
                         fi
 
-                        cherry_matrix "$1" "${file#$CHERRY_DIR/test-}"
+                        cherry_run_matrix "${file}" "${CHERRY_ACTION}"
                 done
         else
-                cherry_matrix "$1" "$2"
+                cherry_run_matrix "$1" "${CHERRY_ACTION}"
         fi
 }
 
 #
-# deal with empty arguments or singular -h/--help early
-if [[ -z $1 || $1 = @(-h|--help) ]]; then
-        usage
-        exit $(( $# ? 0 : 1 ))
-fi
-
-#
 # parse options
-while getopts ':m' flag ; do
+while getopts ':a:d:f:hm' flag ; do
         case $flag in
+        a)
+                # Action to pass to CI scripts
+                CHERRY_ACTION="${OPTARG}"
+                ;;
+        d)
+                # CI directory
+                CHERRY_DIR="${OPTARG}"
+                ;;
+        f)
+                # CI file to run (relative to CI directory, empty means all)
+                CHERRY_FILE="${OPTARG}"
+                ;;
+        h)
+                # Print help
+                usage
+                exit 1
+                ;;
         m)
+                # Use entire matrix, rather than just first entry
                 CHERRY_USEMATRIX=1
                 ;;
         :)
-                die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "$OPTARG"
+                die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "${OPTARG}"
                 ;;
         ?)
-                die '%s: invalid option -- '\''%s'\' "${0##*/}" "$OPTARG"
+                die '%s: invalid option -- '\''%s'\' "${0##*/}" "${OPTARG}"
                 ;;
         esac
 done
 shift $(( OPTIND - 1 ))
-
-#
-# import matrix
-if [[ -f "$CHERRY_DIR/matrix" ]] ; then
-        source "$CHERRY_DIR/matrix"
-fi
-if [[ ${#CHERRY_MATRIX[@]} = 0 ]] ; then
-        CHERRY_MATRIX+=("")
-fi
-if (( ! CHERRY_USEMATRIX )) ; then
-        CHERRY_MATRIX=("${CHERRY_MATRIX[0]}")
-fi
-
-#
-# fetch command
-(( $# )) ||  die '%s: no command specified' "${0##*/}"
-CHERRY_COMMAND=$1; shift
-
-#
-# parse target
-if (( $# )) ; then
-        CHERRY_TARGET=$1; shift
-        if [[ ! -f "$CHERRY_DIR/test-$CHERRY_TARGET" ]] ; then
-                die '%s: invalid target -- '\''%s'\' "${0##*/}" "$CHERRY_TARGET"
-        fi
-fi
 
 #
 # parse remaining arguments
@@ -143,15 +156,58 @@ if (( $# )) ; then
 fi
 
 #
-# dispatch command
-case "$CHERRY_COMMAND" in
-build)
-        cherry_dispatch "build" "$CHERRY_TARGET"
-        ;;
-test)
-        cherry_dispatch "test" "$CHERRY_TARGET"
-        ;;
-*)
-        die '%s: invalid command -- '\''%s'\' "${0##*/}" "$CHERRY_COMMAND"
-        ;;
-esac
+# verify CI target validity
+if [[ ! -z ${CHERRY_FILE} ]] ; then
+        if [[ ! -x "${CHERRY_DIR}/${CHERRY_FILE}" ]] ; then
+                die '%s: cannot execute target -- '\''%s'\' "${0##*/}" "${CHERRY_DIR}/${CHERRY_FILE}"
+        fi
+elif [[ ! -d ${CHERRY_DIR} ]] ; then
+        die '%s: no target directory -- '\''%s'\' "${0##*/}" "${CHERRY_DIR}"
+fi
+
+#
+# Parameter Library
+#
+# A set of variables we commonly use for our own CI
+# projects. They are in no way mandatory. Use them
+# at your own discretion.
+#
+
+CHERRY_LIB_SRCDIR="$(readlink -f "${CHERRY_DIR}/..")"
+
+CHERRY_LIB_MESONSETUP=("--buildtype debug" "--warnlevel 2")
+CHERRY_LIB_VALGRINDWRAP=("valgrind --gen-suppressions=all --trace-children=yes --leak-check=full --error-exitcode 1")
+
+CHERRY_LIB_M_CC=("gcc" "llvm")
+
+CHERRY_LIB_CFLAGS=()
+CHERRY_LIB_CFLAGS+=("-Wno-unknown-warning-option")
+CHERRY_LIB_CFLAGS+=("-Wno-unused-parameter")
+CHERRY_LIB_CFLAGS+=("-Wno-maybe-uninitialized")
+CHERRY_LIB_CFLAGS+=("-g")
+
+CHERRY_LIB_M_CFLAGS=()
+CHERRY_LIB_M_CFLAGS+=("${CHERRY_LIB_CFLAGS[*]} -O2 ${CFLAGS}")
+CHERRY_LIB_M_CFLAGS+=("${CHERRY_LIB_CFLAGS[*]} -O0 ${CFLAGS}")
+CHERRY_LIB_M_CFLAGS+=("${CHERRY_LIB_CFLAGS[*]} -O3 ${CFLAGS}")
+
+CHERRY_LIB_MATRIX=()
+CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[0]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[0]@Q}")
+CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[0]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[1]@Q}")
+CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[0]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[2]@Q}")
+CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[1]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[0]@Q}")
+CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[1]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[1]@Q}")
+CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[1]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[2]@Q}")
+
+#
+# setup
+cherry_import_matrix
+cherry_setup
+
+#
+# dispatch
+if [[ ! -z ${CHERRY_FILE} ]] ; then
+        cherry_dispatch "${CHERRY_DIR}/${CHERRY_FILE}"
+else
+        cherry_dispatch
+fi
