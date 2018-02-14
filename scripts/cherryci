@@ -15,6 +15,7 @@ CHERRY_ACTION="test"
 CHERRY_DIR=".cherryci"
 CHERRY_FILE=
 CHERRY_MATRIX=()
+CHERRY_SUITE="custom"
 CHERRY_USEMATRIX=0
 
 #
@@ -37,6 +38,7 @@ Options:
   -a ACTION                     Action to pass to scripts
   -d DIR                        Directory to search for scripts
   -f FILE                       Single file to execute, rather than all
+  -s SUITE                      Select predefined suite
   -h                            Print this help message
   -m                            Run full matrix
 EOF
@@ -116,7 +118,7 @@ cherry_dispatch() {
 
 #
 # parse options
-while getopts ':a:d:f:hm' flag ; do
+while getopts ':a:d:f:hms:' flag ; do
         case $flag in
         a)
                 # Action to pass to CI scripts
@@ -138,6 +140,10 @@ while getopts ':a:d:f:hm' flag ; do
         m)
                 # Use entire matrix, rather than just first entry
                 CHERRY_USEMATRIX=1
+                ;;
+        s)
+                # Suite selection
+                CHERRY_SUITE="${OPTARG}"
                 ;;
         :)
                 die '%s: option requires an argument -- '\''%s'\' "${0##*/}" "${OPTARG}"
@@ -173,12 +179,13 @@ fi
 # at your own discretion.
 #
 
-CHERRY_LIB_SRCDIR="$(readlink -f "${CHERRY_DIR}/..")"
+export CHERRY_LIB_SRCDIR="$(readlink -f "${CHERRY_DIR}/..")"
+export CHERRY_LIB_VALGRIND=0
 
-CHERRY_LIB_MESONSETUP=("--buildtype debug" "--warnlevel 2")
-CHERRY_LIB_VALGRINDWRAP=("valgrind --gen-suppressions=all --trace-children=yes --leak-check=full --error-exitcode 1")
-
-CHERRY_LIB_M_CC=("gcc" "llvm")
+export CHERRY_LIB_VALGRINDWRAP="valgrind --gen-suppressions=all --trace-children=yes --leak-check=full --error-exitcode=1"
+export CHERRY_LIB_MESONSETUP="meson setup --buildtype debugoptimized --warnlevel 2"
+export CHERRY_LIB_NINJABUILD="ninja -v"
+export CHERRY_LIB_MESONTEST="meson test"
 
 CHERRY_LIB_CFLAGS=()
 CHERRY_LIB_CFLAGS+=("-Wno-unknown-warning-option")
@@ -186,18 +193,19 @@ CHERRY_LIB_CFLAGS+=("-Wno-unused-parameter")
 CHERRY_LIB_CFLAGS+=("-Wno-maybe-uninitialized")
 CHERRY_LIB_CFLAGS+=("-g")
 
-CHERRY_LIB_M_CFLAGS=()
-CHERRY_LIB_M_CFLAGS+=("${CHERRY_LIB_CFLAGS[*]} -O2 ${CFLAGS}")
-CHERRY_LIB_M_CFLAGS+=("${CHERRY_LIB_CFLAGS[*]} -O0 ${CFLAGS}")
-CHERRY_LIB_M_CFLAGS+=("${CHERRY_LIB_CFLAGS[*]} -O3 ${CFLAGS}")
+CHERRY_LIB_M_DEFAULT=("CHERRY_LIB_VALGRIND=1" "CC=clang" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O2'")
+CHERRY_LIB_M_GCC=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O2'")
+CHERRY_LIB_M_GCC_DEBUG=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O0'")
+CHERRY_LIB_M_GCC_OPTIMIZED=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O3'")
 
-CHERRY_LIB_MATRIX=()
-CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[0]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[0]@Q}")
-CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[0]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[1]@Q}")
-CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[0]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[2]@Q}")
-CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[1]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[0]@Q}")
-CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[1]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[1]@Q}")
-CHERRY_LIB_MATRIX+=("export CC=${CHERRY_LIB_M_CC[1]@Q} CFLAGS=${CHERRY_LIB_M_CFLAGS[2]@Q}")
+#
+# Select predefined suite
+if [[ "${CHERRY_SUITE}" = "c-util" ]] ; then
+        CHERRY_MATRIX+=("export ${CHERRY_LIB_M_DEFAULT[*]}")
+        CHERRY_MATRIX+=("export ${CHERRY_LIB_M_GCC[*]}")
+        CHERRY_MATRIX+=("export ${CHERRY_LIB_M_GCC_DEBUG[*]}")
+        CHERRY_MATRIX+=("export ${CHERRY_LIB_M_GCC_OPTIMIZED[*]}")
+fi
 
 #
 # setup
