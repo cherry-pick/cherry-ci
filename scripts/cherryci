@@ -188,15 +188,42 @@ export CHERRY_LIB_NINJABUILD="ninja -v"
 export CHERRY_LIB_MESONTEST="meson test"
 
 CHERRY_LIB_CFLAGS=()
-CHERRY_LIB_CFLAGS+=("-Wno-unknown-warning-option")
-CHERRY_LIB_CFLAGS+=("-Wno-unused-parameter")
-CHERRY_LIB_CFLAGS+=("-Wno-maybe-uninitialized")
-CHERRY_LIB_CFLAGS+=("-g")
+CHERRY_LIB_CFLAGS_CLANG=()
+CHERRY_LIB_CFLAGS_GCC=()
 
-CHERRY_LIB_M_DEFAULT=("CHERRY_LIB_VALGRIND=1" "CC=clang" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O2'")
-CHERRY_LIB_M_GCC=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O2'")
-CHERRY_LIB_M_GCC_DEBUG=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O0'")
-CHERRY_LIB_M_GCC_OPTIMIZED=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} -O3'")
+CHERRY_LIB_CFLAGS+=("-Wno-maybe-uninitialized")
+CHERRY_LIB_CFLAGS+=("-Wno-unused-parameter")
+
+CHERRY_LIB_CFLAGS+=("-Wdate-time")
+CHERRY_LIB_CFLAGS+=("-Wdeclaration-after-statement")
+CHERRY_LIB_CFLAGS+=("-Wendif-labels")
+CHERRY_LIB_CFLAGS+=("-Wfloat-equal")
+CHERRY_LIB_CFLAGS+=("-Wlogical-op")
+CHERRY_LIB_CFLAGS+=("-Wmissing-include-dirs")
+CHERRY_LIB_CFLAGS+=("-Wmissing-noreturn")
+CHERRY_LIB_CFLAGS+=("-Wnested-externs")
+CHERRY_LIB_CFLAGS+=("-Wold-style-definition")
+CHERRY_LIB_CFLAGS+=("-Wredundant-decls")
+CHERRY_LIB_CFLAGS+=("-Wshadow")
+CHERRY_LIB_CFLAGS+=("-Wstrict-aliasing=3")
+CHERRY_LIB_CFLAGS+=("-Wstrict-prototypes")
+CHERRY_LIB_CFLAGS+=("-Wsuggest-attribute=noreturn")
+CHERRY_LIB_CFLAGS+=("-Wundef")
+CHERRY_LIB_CFLAGS+=("-Wwrite-strings")
+
+CHERRY_LIB_CFLAGS+=("-g")
+CHERRY_LIB_CFLAGS+=("-Werror")
+
+CHERRY_LIB_CFLAGS_CLANG+=("-Werror")
+CHERRY_LIB_CFLAGS_CLANG+=("-Wno-gnu-alignof-expression")
+CHERRY_LIB_CFLAGS_CLANG+=("-Wno-unknown-warning-option")
+
+CHERRY_LIB_CFLAGS_GCC+=("-Wno-error=type-limits")
+
+CHERRY_LIB_M_DEFAULT=("CHERRY_LIB_VALGRIND=1" "CC=clang" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} ${CHERRY_LIB_CFLAGS_CLANG[*]} -O2'")
+CHERRY_LIB_M_GCC=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} ${CHERRY_LIB_CFLAGS_GCC[*]} -O2'")
+CHERRY_LIB_M_GCC_DEBUG=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} ${CHERRY_LIB_CFLAGS_GCC[*]} -O0'")
+CHERRY_LIB_M_GCC_OPTIMIZED=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} ${CHERRY_LIB_CFLAGS_GCC[*]} -O3'")
 
 #
 # Select predefined suite
