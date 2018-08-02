@@ -185,7 +185,7 @@ export CHERRY_LIB_VALGRIND=0
 export CHERRY_LIB_VALGRINDWRAP="valgrind --gen-suppressions=all --trace-children=yes --leak-check=full --error-exitcode=1"
 export CHERRY_LIB_MESONSETUP="meson setup --buildtype debugoptimized --warnlevel 2"
 export CHERRY_LIB_NINJABUILD="ninja -v"
-export CHERRY_LIB_MESONTEST="meson test --timeout-multiplier=16"
+export CHERRY_LIB_MESONTEST="meson test --print-errorlogs --timeout-multiplier=16"
 
 CHERRY_LIB_CFLAGS=()
 CHERRY_LIB_CFLAGS_CLANG=()
