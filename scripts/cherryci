@@ -219,6 +219,7 @@ CHERRY_LIB_CFLAGS_CLANG+=("-Wno-gnu-alignof-expression")
 CHERRY_LIB_CFLAGS_CLANG+=("-Wno-unknown-warning-option")
 
 CHERRY_LIB_CFLAGS_GCC+=("-Wno-error=type-limits")
+CHERRY_LIB_CFLAGS_GCC+=("-Wno-error=missing-field-initializers")
 
 CHERRY_LIB_M_DEFAULT=("CHERRY_LIB_VALGRIND=1" "CC=clang" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} ${CHERRY_LIB_CFLAGS_CLANG[*]} -O2'")
 CHERRY_LIB_M_GCC=("CC=gcc" "CFLAGS='${CHERRY_LIB_CFLAGS[*]} ${CHERRY_LIB_CFLAGS_GCC[*]} -O2'")
